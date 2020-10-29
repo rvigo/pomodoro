@@ -1,5 +1,5 @@
 from flask import Flask, request
-import pomodoro
+import pomodoro_core as pomodoro
 import log
 import threading
 import sys

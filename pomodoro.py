@@ -1,106 +1,55 @@
-import time
-import argparse
+import click
+import pomodoro_core as p
 import log
-import sys
-import os
-import win_messages
+import server
+import requests
+from time import sleep
+import threading
 
-# consts
-ICON_STOP = 0x10
-YES_NO = 0x04
-ctime = 0
-small_break = 0
-big_break = 0
-counter = 1
-session_counter = 1
-timer = ''
+IS_SERVER_ON=False
+HOSTNAME = 'localhost'
+PORT=3001
 
+URL = f'{HOSTNAME}:{PORT}'
 
-def get_timer() -> str:
-    if timer is '':
-        return 'o contador ainda não foi iniciado!S'
-    return timer
+@click.group()
+def pomodoro():
+    pass
 
+@pomodoro.command()
+def timer():
+    click.echo(requests.get(f'http://{URL}/remaining_time_info').text) 
+    
+@pomodoro.command()
+def cycle():
+    click.echo(requests.get(f'http://{URL}/actual_cycle').text) 
+    
+@pomodoro.command()
+@click.option('--time','-t', type=int, required=True)
+@click.option('--small','-s', type=int, required=True)
+@click.option('--big','-b', type=int, required=True)
+def start(time, big, small):
+    log.debug('validando status do servidor')
+    global IS_SERVER_ON
+    if not IS_SERVER_ON:
+        log.debug('servidor desligado. Iniciando servidor na porta 3001')  
+        bootup()
+        IS_SERVER_ON=True
+    
+    route= f'http://{URL}/new/session?big={big}&small={small}&time={time}'
+    r = requests.post(route)
+    click.echo(r.text)  
+    
+@pomodoro.command()
+def run():
+    global IS_SERVER_ON
+    if not IS_SERVER_ON:
+        log.debug('servidor desligado. Iniciando servidor na porta 3001')  
+        bootup()
+        IS_SERVER_ON=True
+           
+def bootup():
+    threading.Thread(target=server.start_server).start()
 
-def get_cycle() -> str:
-    return session_counter
-
-
-def countdown(time_in_seconds):
-    global timer
-    while time_in_seconds:
-        m, s = divmod(time_in_seconds, 60)
-        h, m = divmod(m, 60)
-        timer = f'{h:02d}:{m:02d}:{s:02d}'
-        time.sleep(1)
-        time_in_seconds -= 1
-
-
-def core():
-    global session_counter
-    loop_flag = True
-    while loop_flag:
-        log.debug(f'Ciclo {counter}')
-        countdown(ctime)
-        break_core()
-        session_counter += 1
-        if(not validate_new_cycle()):
-            reset_consts()
-            loop_flag = False
-
-
-def reset_consts():
-    global session_counter
-    global counter
-    global ctime
-    global big_break
-    global small_break
-    global timer
-
-    session_counter = 1
-    counter = 1
-    ctime = 0
-    big_break = 0
-    small_break = 0
-    timer = ''
-
-
-def validate_new_cycle():
-    value = value = win_messages.message_box(
-        f'Fim da pausa! \nDeseja realizar um novo ciclo?', YES_NO)
-    # 7 is the NO result
-    if value is 7:
-        return False
-
-
-def break_core():
-    global counter
-    if counter is 4:
-        log.info('big break')
-        win_messages.message_box(f'Faça uma pausa de {big_break/60} minutos')
-        counter = 0
-        countdown(big_break)
-
-    else:
-        log.info('small break')
-        win_messages.message_box(f'Faça uma pausa de {small_break/60} minutos')
-        counter += 1
-        countdown(small_break)
-
-
-def main(t, big, small):
-    print(f'PID {os.getpid()}')
-
-    log.debug('iniciando nova sessão de trabalho')
-    # globals
-    global ctime
-    global big_break
-    global small_break
-
-    # parsing to minutes
-    ctime = (t * 60)
-    big_break = (big * 60)
-    small_break = (small * 60)
-
-    # start
-    core()
+if __name__ == "__main__":
+    pomodoro()
