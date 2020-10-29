@@ -3,7 +3,7 @@ import os
 
 
 # logging configs
-logging.basicConfig(filename='log.txt', filemode= 'a', format='%(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s',
+logging.basicConfig(filename='log.log', filemode= 'a', format='%(asctime)s - %(name)s - %(process)d - %(levelname)s - %(message)s',
                     datefmt='%d-%b-%y %H:%M:%S', level='DEBUG')
 
 
