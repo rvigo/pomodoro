@@ -20,12 +20,12 @@ def pomodoro():
 @pomodoro.command()
 @http_exception_handler
 def timer():
-    click.echo(requests.get(f'http://{URL}/remaining_time_info').text) 
+    click.echo(requests.get(f'http://{URL}/session/timer').text) 
     
 @pomodoro.command()
 @http_exception_handler
 def cycle():
-    click.echo(requests.get(f'http://{URL}/actual_cycle').text) 
+    click.echo(requests.get(f'http://{URL}/session/cycle').text) 
     
 @pomodoro.command()
 @click.option('--time','-t', type=int, required=True)
@@ -33,14 +33,9 @@ def cycle():
 @click.option('--big','-b', type=int, required=True)
 @http_exception_handler
 def start(time, big, small):
-    log.debug('validando status do servidor')
-    global IS_SERVER_ON
-    if not IS_SERVER_ON:
-        log.debug('servidor desligado. Iniciando servidor na porta 3001')  
-        bootup()
-        IS_SERVER_ON=True
-    
-    route= f'http://{URL}/new/session?big={big}&small={small}&time={time}'
+    log.debug('Validando status do servidor')
+    run()
+    route= f'http://{URL}/session?big={big}&small={small}&time={time}'
     r = requests.post(route)
     click.echo(r.text)  
     
@@ -49,12 +44,14 @@ def start(time, big, small):
 def run():
     global IS_SERVER_ON
     if not IS_SERVER_ON:
-        log.debug('servidor desligado. Iniciando servidor na porta 3001')  
+        log.debug('Servidor desligado. Iniciando servidor na porta 3001')  
         bootup()
-        IS_SERVER_ON=True
-        
-        ##TODO validar outra abordagem para o start do servidor http
-           
+        ping = requests.get(f'http://{URL}/ping').text
+        if ping is 'pong':
+            IS_SERVER_ON=True
+        else:
+            log.error('Ocorreu um erro ao ligar o servidor')   
+            
 def bootup():
     threading.Thread(target=server.start_server).start()
 

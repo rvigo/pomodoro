@@ -12,17 +12,19 @@ ctime = 0
 small_break = 0
 big_break = 0
 counter = 1
-session_counter = 1
+session_counter = 0
 timer = ''
 
 
 def get_timer() -> str:
     if timer is '':
-        return 'o contador ainda não foi iniciado!S'
+        return 'O contador ainda não foi iniciado'
     return timer
 
 
 def get_cycle() -> str:
+    if session_counter is 0:
+        return 'Nenhuma sessão em andamento'
     return session_counter
 
 
@@ -57,7 +59,7 @@ def reset_consts():
     global small_break
     global timer
 
-    session_counter = 1
+    session_counter = 0
     counter = 1
     ctime = 0
     big_break = 0
@@ -76,13 +78,13 @@ def validate_new_cycle():
 def break_core():
     global counter
     if counter is 4:
-        log.info('big break')
+        log.debug('big break')
         win_messages.message_box(f'Faça uma pausa de {big_break/60} minutos')
         counter = 0
         countdown(big_break)
 
     else:
-        log.info('small break')
+        log.debug('small break')
         win_messages.message_box(f'Faça uma pausa de {small_break/60} minutos')
         counter += 1
         countdown(small_break)
